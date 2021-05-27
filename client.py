@@ -688,8 +688,7 @@ def initialize_car(c):
     c.respond_to_server() 
 
 #res={p:{'lastLapTime':-1, 'circuitLength':-1, 'distRaced':-1} for p in [3001,3002]}
-import os
-import time
+
 def race(p, params):
     #print ("Thread {} partito\n".format(p))
     tot_time=0
@@ -726,32 +725,3 @@ def race(p, params):
     #res[p]['distRaced']=C.S.d['distRaced']
     #res[p]['circuitLength']=T.laplength
     return (C.S.d['distRaced'], tot_time, T.laplength)
-
-# import threading
-# from Server import Server
-# import time
-# from multiprocessing.pool import Pool
-
-# if __name__=="__main__":
-#     server_forza = Server('forza')
-#     server_forza.start()
-#     server_wheel = Server('wheel1')
-#     server_wheel.start()
-
-#     time.sleep(10)
-
-#     with Pool(2) as p:
-#         results=p.starmap(race, [(3001,),(3002,)])
-#         print(results)
-
-    # t1 = threading.Thread(target=race, args=(3001,))
-    # t1.setDaemon(True)
-    # t1.start()
-    # t2 = threading.Thread(target=race, args=(3002,))
-    # t2.setDaemon(True)
-    # t2.start()
-
-    # t1.join()
-    # t2.join()
-
-    #print(res) #[(119.16, 5809.43, 5783.69), (141.182, 4353.75, 4328.53)]
