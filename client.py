@@ -692,6 +692,7 @@ def initialize_car(c):
 def race(p, params):
     #print ("Thread {} partito\n".format(p))
     tot_time=0
+    oldLapTime=0
     laps=0
     global T
     #global res
@@ -709,13 +710,14 @@ def race(p, params):
     C.S.d['targetSpeed']= 0
     for step in range(C.maxSteps,0,-1):
         C.get_servers_input()
-        if C.S.d['lastLapTime']!=0:
+        if C.S.d['lastLapTime']!=oldLapTime:
             #res[p]['lastLapTime']=C.S.d['lastLapTime']
-            tot_time=C.S.d['lastLapTime']
+            tot_time+=C.S.d['lastLapTime']
+            oldLapTime = C.S.d['lastLapTime']
             laps+=1
-        if laps!=0:
-            break
         drive(C,step)
+        if laps==2:
+            break
         C.respond_to_server()
     if not C.stage:  
         T.write_track(C.trackname)
@@ -724,4 +726,4 @@ def race(p, params):
     C.shutdown()
     #res[p]['distRaced']=C.S.d['distRaced']
     #res[p]['circuitLength']=T.laplength
-    return (C.S.d['distRaced'], tot_time, T.laplength)
+    return (C.S.d['distRaced'], tot_time, T.laplength*2)

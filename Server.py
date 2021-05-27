@@ -16,5 +16,5 @@ class Server(Thread):
     # file di configurazione della corsa.
     def run(self):
         os.system(
-            r"pushd E:\torcs_{} & wtorcs.exe -nofuel -nodamage -nolaptime -T -t 1000000000 "
+            r"pushd E:\torcs_{} & wtorcs.exe -nofuel -nolaptime -T -t 1000000000 "
             r".\config\raceman\quickrace.xml >NUL".format(self.track))

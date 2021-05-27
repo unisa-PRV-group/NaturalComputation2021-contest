@@ -73,11 +73,11 @@ class RaceProblem(Problem):
 
 if __name__ == "__main__":
     # population size
-    n_pop = 2
+    n_pop = 60
     # number of variables for the problem visualization
     n_vars = 48
     # maximum number of generations
-    max_gens = 10
+    max_gens = 20
 
     # start servers
     server_forza = Server('forza')
@@ -101,17 +101,17 @@ if __name__ == "__main__":
     callback=CustomCallback()
 
     algorithm = DE(pop_size=n_pop, sampling=LatinHypercubeSampling(iterations=100, criterion="maxmin"),
-                   variant="DE/rand/1/bin", CR=0.7, F=0.3, dither="vector", jitter=True,
+                   variant="DE/rand/1/bin", CR=0.7, F=0.9, dither="vector", jitter=True,
                    eliminate_duplicates=True)
                    
     res = minimize(problem, algorithm, termination, callback=callback, seed=1, verbose=False, save_history=False)
     
     # save best params
-    f=open(os.path.join(param_path,"trained_params_10"),"w")
+    f=open(os.path.join(param_path,"trained_params_{}_gen".format(max_gens)),"w")
     json.dump(dict(zip(problem.params_keys, res.X)),f)
     f.close()
 
-    f=open(os.path.join(res_path,"logs_10"),"w")
+    f=open(os.path.join(res_path,"logs_{}_gen".format(max_gens)),"w")
     json.dump(res.algorithm.callback.data,f)
     f.close()
 
@@ -130,7 +130,7 @@ if __name__ == "__main__":
     plt.yscale("log")
     plt.xlim((1,max_gens))
     #plt.show()
-    plt.savefig(os.path.join(fig_path,"10_gen_convergence.png"))
+    plt.savefig(os.path.join(fig_path,"{}_gen_convergence.png".format(max_gens)))
 
     plt.clf()
 
@@ -142,7 +142,7 @@ if __name__ == "__main__":
     plt.yscale("log")
     plt.xlim((1,max_gens))
     #plt.show()
-    plt.savefig(os.path.join(fig_path,"10_gen_avg.png"))
+    plt.savefig(os.path.join(fig_path,"{}_gen_avg.png".format(max_gens)))
 
     plt.clf()
 
@@ -154,6 +154,6 @@ if __name__ == "__main__":
     plt.yscale("log")
     plt.xlim((1,max_gens))
     #plt.show()
-    plt.savefig(os.path.join(fig_path,"10_gen_stddev.png"))
+    plt.savefig(os.path.join(fig_path,"{}_gen_stddev.png".format(max_gens)))
     
     exit()

@@ -239,9 +239,9 @@ class Client():
                     print("Client connected on %d.............." % self.port)
                     continue
                 elif b'***shutdown***' in sockdata:
-                    # print(("Server has stopped the race on %d. "+
-                    #         "You were in %d place.") %
-                    #         (self.port,self.S.d['racePos']))
+                    print(("Server has stopped the race on %d. "+
+                            "You were in %d place.") %
+                            (self.port,self.S.d['racePos']))
                     self.shutdown()
                     return
                 elif b'***restart***' in sockdata:
