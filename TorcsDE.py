@@ -132,6 +132,8 @@ if __name__ == "__main__":
     #plt.show()
     plt.savefig(os.path.join(fig_path,"10_gen_convergence.png"))
 
+    plt.clf()
+
     # plot avg per gen
     plt.title("Fitness avg per gen")
     plt.plot(list(range(1,max_gens+1,1)), avgs)
@@ -141,6 +143,8 @@ if __name__ == "__main__":
     plt.xlim((1,max_gens))
     #plt.show()
     plt.savefig(os.path.join(fig_path,"10_gen_avg.png"))
+
+    plt.clf()
 
     # plot stddev per gen
     plt.title("Fitness stddev per gen")
