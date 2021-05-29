@@ -5,6 +5,9 @@ import math
 import os
 import json
 from tqdm import tqdm
+from client import race
+from Server import Server
+import time
 
 # recover params name
 base_path=os.path.realpath(os.path.dirname(__file__))
@@ -14,23 +17,39 @@ lb = json.load(f)
 f.close()
 params={k:-1 for k in lb.keys()}
 
-n_pop=100
-bar = tqdm(total=n_pop)
+# n_pop=100
+# bar = tqdm(total=n_pop, disable=True)
 
 filepath_out=os.path.abspath("F:\\Drive condivisi\\NaturalComputation_FinalContest2021\\output_1.csv")
 filepath_in=os.path.abspath("F:\\Drive condivisi\\NaturalComputation_FinalContest2021\\input_1.csv")
 
-while(True):
+if __name__ == "__main__":
+    server_forza = Server('forza')
+    server_forza.setDaemon(True)
+    server_forza.start()
+    server_wheel = Server('wheel1')
+    server_wheel.setDaemon(True)
+    server_wheel.start()
+    time.sleep(10)
 
-    while not os.path.exists(filepath_in):
-        pass
+    csvfile_in = open(filepath_in,"r",newline='')
+    csv_reader = csv.reader(csvfile_in, delimiter=',')
 
-    with open(filepath_in,"r",newline='') as csvfile:
-        csv_reader = csv.reader(csvfile, delimiter=',')
+    solutions=[]
+
+    while True:
+        # bar.disable=False
+        # if bar.n!=0: bar.reset()
+
+        while not os.path.exists(filepath_in):
+            pass
+        
+        print("File here")
+            
         for row in csv_reader: # for each individual, aka 48 params
             if len(row)!=0:
                 for i,k in enumerate(params.keys()):
-                    params[k]=row[i]
+                    params[k]=float(row[i])
 
             with Pool(2) as p:
                 results=p.starmap(race, [(3001,params),(3002,params)])
@@ -44,44 +63,49 @@ while(True):
                 #Penalità
                 penalty = penalty_wheel*penalty_forza
                 del results
-                    
-            #Calcolo posizione centrale del veicolo, parametro "trackPos"
-            cnt_forza = 0
-            cnt_wheel = 0
+                        
+                #Calcolo posizione centrale del veicolo, parametro "trackPos"
+                cnt_forza = 0
+                cnt_wheel = 0
 
-            for pos in check_pos_forza:
-                if pos > 0.7 or pos < -0.7:
-                    cnt_forza +=1
+                for pos in check_pos_forza:
+                    if pos > 0.7 or pos < -0.7:
+                        cnt_forza +=1
 
-            for pos in check_pos_wheel:
-                if pos > 0.7 or pos < -0.7:
-                    cnt_wheel +=1
+                for pos in check_pos_wheel:
+                    if pos > 0.7 or pos < -0.7:
+                        cnt_wheel +=1
 
-            if len(check_pos_forza) != 0:
-                check_pos_forza_percentage = cnt_forza/len(check_pos_forza)
-            else:
-                check_pos_forza_percentage = 0
+                if len(check_pos_forza) != 0:
+                    check_pos_forza_percentage = cnt_forza/len(check_pos_forza)
+                else:
+                    check_pos_forza_percentage = 0
 
-            if len(check_pos_wheel) != 0:
-                check_pos_wheel_percentage = cnt_wheel/len(check_pos_wheel)
-            else:
-                check_pos_wheel_percentage = 0
+                if len(check_pos_wheel) != 0:
+                    check_pos_wheel_percentage = cnt_wheel/len(check_pos_wheel)
+                else:
+                    check_pos_wheel_percentage = 0
 
-            if (check_pos_forza_percentage == 0) and (check_pos_wheel_percentage == 0):
-                check_pos_final = 0
-            else:
-                check_pos_final = (check_pos_forza_percentage+check_pos_wheel_percentage)/2
+                if (check_pos_forza_percentage == 0) and (check_pos_wheel_percentage == 0):
+                    check_pos_final = 0
+                else:
+                    check_pos_final = (check_pos_forza_percentage+check_pos_wheel_percentage)/2
 
-            #print("valutata una fitness")
-            #Nel caso in cui la macchina non finisce un giro
-            if time_forza == 0 or time_wheel==0:
-                f=[math.inf]
-            else:
-                f=-(-penalty+((distRaced_forza / time_forza) * (distRaced_wheel/time_wheel))-check_pos_final)
+                #print("valutata una fitness")
+                #Nel caso in cui la macchina non finisce un giro
+                if time_forza == 0 or time_wheel==0:
+                    f=math.inf
+                else:
+                    f=-(-penalty+((distRaced_forza / time_forza) * (distRaced_wheel/time_wheel))-check_pos_final)
+                
+                print(f)
 
-            # write results
-            with open(filepath_out,"a",newline='') as csvfile:
-                spamwriter = csv.writer(csvfile, delimiter=',', quotechar='""', quoting=csv.QUOTE_MINIMAL)
-                spamwriter.writerow(f)
+                solutions.append(str(f))
 
-            tqdm.update(2)
+        # write results
+        csvfile_out = open(filepath_out,"a",newline='')
+        spamwriter = csv.writer(csvfile_out, delimiter=',', quoting=csv.QUOTE_MINIMAL)
+        spamwriter.writerow(solutions)
+        print("Finished")
+
+                # tqdm.update(2)
