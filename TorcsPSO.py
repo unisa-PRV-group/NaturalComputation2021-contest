@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 # Import PySwarms
 import pyswarms as ps
 from pyswarms.utils.functions import single_obj as fx
-from pyswarms.utils.plotters import (plot_cost_history, plot_contour, plot_surface)
+from pyswarms.utils.plotters import plot_cost_history
 import os
 from multiprocessing.pool import Pool
 from client import race
@@ -15,6 +15,7 @@ from Server import Server
 import time
 import warnings
 warnings.filterwarnings("ignore")
+from recover_params import recover_params
 
 # paths
 base_path=os.path.realpath(os.path.dirname(__file__))
@@ -84,16 +85,26 @@ if __name__ == "__main__":
     # Set-up hyperparameters #
     options = {'c1': 1.49618, 'c2': 1.49618, 'w': 0.7298}#, 'k': 2, 'p': 2} 
     problem_size = 48
-    swarm_size = 5
+    swarm_size = 3
     iterations = 2
 
     tqdm.total=2*swarm_size*iterations
 
     # usiamo local best PSO #
+    init_pos = None
+    path=recover_params(res_path, "PSO")
+    if path!="":
+        f=open(os.path.join(res_path,path),"r")
+        params=json.load(f)['lastGen']
+        f.close()
+        init_pos = np.vstack([[c] for c in params])
+
     np.random.seed(10)
-    optimizer = ps.single.GlobalBestPSO(n_particles=swarm_size, dimensions=problem_size, options=options, bounds=bounds)
+    optimizer = ps.single.GlobalBestPSO(n_particles=swarm_size, dimensions=problem_size, options=options, bounds=bounds, init_pos=init_pos)
     cost, pos = optimizer.optimize(fitness, iters=iterations, verbose=False)
     print("Best solution found: \nX = %s\nF = %s" % ([-1*p for p in pos], -cost))
+
+    stats["lastGen"]=(optimizer.pos_history[-1]).tolist() #salvo tutti i valori dell'ultima generazione (96,48)
 
     # save best params
     f=open(os.path.join(param_path,"trained_params_{}_gen_PSO".format(iterations)),"w")
@@ -104,43 +115,45 @@ if __name__ == "__main__":
     json.dump(stats,f)
     f.close()
 
-    # recover history
-    best = stats["best"]
-    avgs = stats["avg"]
-    stddevs = stats["stddev"]
+    print(stats["lastGen"])
 
-    # plot convergence
-    plt.title("Convergence")
-    plt.plot(list(range(1,iterations+1,1)), best)
-    plt.xlabel("Generation")
-    plt.ylabel("Fitness")
-    plt.yscale("log")
-    plt.xlim((1,iterations))
-    #plt.show()
-    plt.savefig(os.path.join(fig_path,"{}_gen_convergence_PSO.png".format(iterations)))
+    # # recover history
+    # best = stats["best"]
+    # avgs = stats["avg"]
+    # stddevs = stats["stddev"]
 
-    plt.clf()
+    # # plot convergence
+    # plt.title("Convergence")
+    # plt.plot(list(range(1,iterations+1,1)), best)
+    # plt.xlabel("Generation")
+    # plt.ylabel("Fitness")
+    # plt.yscale("log")
+    # plt.xlim((1,iterations))
+    # #plt.show()
+    # plt.savefig(os.path.join(fig_path,"{}_gen_convergence_PSO.png".format(iterations)))
 
-    # plot avg per gen
-    plt.title("Fitness avg per gen")
-    plt.plot(list(range(1,iterations+1,1)), avgs)
-    plt.xlabel("Generation")
-    plt.ylabel("Fitness avg")
-    plt.yscale("log")
-    plt.xlim((1,iterations))
-    #plt.show()
-    plt.savefig(os.path.join(fig_path,"{}_gen_avg_PSO.png".format(iterations)))
+    # plt.clf()
 
-    plt.clf()
+    # # plot avg per gen
+    # plt.title("Fitness avg per gen")
+    # plt.plot(list(range(1,iterations+1,1)), avgs)
+    # plt.xlabel("Generation")
+    # plt.ylabel("Fitness avg")
+    # plt.yscale("log")
+    # plt.xlim((1,iterations))
+    # #plt.show()
+    # plt.savefig(os.path.join(fig_path,"{}_gen_avg_PSO.png".format(iterations)))
 
-    # plot stddev per gen
-    plt.title("Fitness stddev per gen")
-    plt.plot(list(range(1,iterations+1,1)), stddevs)
-    plt.xlabel("Generation")
-    plt.ylabel("Fitness stddev")
-    plt.yscale("log")
-    plt.xlim((1,iterations))
-    #plt.show()
-    plt.savefig(os.path.join(fig_path,"{}_gen_stddev_PSO.png".format(iterations)))
+    # plt.clf()
+
+    # # plot stddev per gen
+    # plt.title("Fitness stddev per gen")
+    # plt.plot(list(range(1,iterations+1,1)), stddevs)
+    # plt.xlabel("Generation")
+    # plt.ylabel("Fitness stddev")
+    # plt.yscale("log")
+    # plt.xlim((1,iterations))
+    # #plt.show()
+    # plt.savefig(os.path.join(fig_path,"{}_gen_stddev_PSO.png".format(iterations)))
 
     exit()
