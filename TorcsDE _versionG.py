@@ -61,20 +61,48 @@ class RaceProblem(Problem):
             results=p.starmap(race, [(3001,params),(3002,params)])
             #print("results here",results)
             #risultati per il circuito Forza
-            distRaced_forza,time_forza,length_forza = results[0]
+            distRaced_forza,time_forza,length_forza,check_pos_forza = results[0]
             penalty_forza = (distRaced_forza-length_forza) / 10
             #Risultati per il circuito Wheel1
-            distRaced_wheel,time_wheel,length_wheel = results[1]
+            distRaced_wheel,time_wheel,length_wheel,check_pos_wheel = results[1]
             penalty_wheel = (distRaced_wheel - length_wheel) / 10
             #Penalità
             penalty = penalty_wheel*penalty_forza
             del results
+                
+        #Calcolo posizione centrale del veicolo, parametro "trackPos"
+        cnt_forza = 0
+        cnt_wheel = 0
+
+        for pos in check_pos_forza:
+            if pos > 0.7 or pos < -0.7:
+                cnt_forza +=1
+
+        for pos in check_pos_wheel:
+            if pos > 0.7 or pos < -0.7:
+                cnt_wheel +=1
+        
+        if len(check_pos_forza) != 0:
+            check_pos_forza_percentage = cnt_forza/len(check_pos_forza)
+        else:
+            check_pos_forza_percentage = 0
+        
+        if len(check_pos_wheel) != 0:
+            check_pos_wheel_percentage = cnt_wheel/len(check_pos_wheel)
+        else:
+            check_pos_wheel_percentage = 0
+
+        if (check_pos_forza_percentage == 0) and (check_pos_wheel_percentage == 0):
+            check_pos_final = 0
+        else:
+            check_pos_final = (check_pos_forza_percentage+check_pos_wheel_percentage)/2
+
         #print("valutata una fitness")
         #Nel caso in cui la macchina non finisce un giro
         if time_forza == 0 or time_wheel==0:
             f=[math.inf]
         else:
-            f=-(-penalty+((distRaced_forza / time_forza) * (distRaced_wheel/time_wheel)))
+            f=-(-penalty+((distRaced_forza / time_forza) * (distRaced_wheel/time_wheel))-check_pos_final)
         out["F"] = np.array(f, dtype='float')
         self.tqdm.update(2)
 

@@ -696,6 +696,7 @@ def race(p, params):
     laps=0
     global T
     #global res
+    check_pos = []
     T= Track()
     C= snakeoil.Client(p=p, parameters=params)
     if C.stage == 1 or C.stage == 2:
@@ -710,6 +711,7 @@ def race(p, params):
     C.S.d['targetSpeed']= 0
     for step in range(C.maxSteps,0,-1):
         C.get_servers_input()
+        check_pos.append(C.S.d['trackPos'])
         if C.S.d['lastLapTime']!=oldLapTime:
             #res[p]['lastLapTime']=C.S.d['lastLapTime']
             tot_time+=C.S.d['lastLapTime']
@@ -726,4 +728,4 @@ def race(p, params):
     C.shutdown()
     #res[p]['distRaced']=C.S.d['distRaced']
     #res[p]['circuitLength']=T.laplength
-    return (C.S.d['distRaced'], tot_time, T.laplength*2)
+    return (C.S.d['distRaced'], tot_time, T.laplength*2, check_pos)
