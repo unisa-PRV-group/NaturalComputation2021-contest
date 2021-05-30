@@ -143,14 +143,17 @@ if __name__ == "__main__":
     print("Best solution found: \nX = %s\nF = %s" % ([-1*p for p in pos], -cost))
 
     stats["lastGen"]=(optimizer.pos_history[-1]).tolist() #salvo tutti i valori dell'ultima generazione (96,48)
-    stats["best"]=(optimizer.cost_history).tolist()
+    stats["best"]=optimizer.cost_history
 
     # save best params
-    f=open(os.path.join(param_path,"trained_params_{}_gen_PSO".format(iterations)),"w")
+    path_dir_p = os.path.join(param_path, dirname)
+    if not os.path.exists(path_dir_p): #training da zero
+        os.mkdir(path_dir_p)
+    f=open(os.path.join(path_dir_p,"trained_params_{}_gen".format(iterations)),"w")
     json.dump(dict(zip(params_keys, pos)),f)
     f.close()
 
-    f=open(os.path.join(res_path,"logs_{}_gen_PSO".format(iterations)),"w")
+    f=open(os.path.join(path_dir,"logs_{}_gen".format(iterations)),"w")
     json.dump(stats,f)
     f.close()
 
