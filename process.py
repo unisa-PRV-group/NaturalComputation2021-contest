@@ -56,33 +56,38 @@ if __name__ == "__main__":
                 #print("results here",results)
                 #risultati per il circuito Forza
                 distRaced_forza,time_forza,length_forza,check_pos_forza = results[0]
-                penalty_forza = (distRaced_forza-length_forza) / 10
+                penalty_forza = distRaced_forza-length_forza
                 #Risultati per il circuito Wheel1
                 distRaced_wheel,time_wheel,length_wheel,check_pos_wheel = results[1]
-                penalty_wheel = (distRaced_wheel - length_wheel) / 10
+                penalty_wheel = distRaced_wheel - length_wheel
                 #Penalità
-                penalty = penalty_wheel*penalty_forza
+                penalty = (penalty_wheel+penalty_forza)/2
                 del results
-                        
+                p.close()
+        
+            if time_forza == 0 or time_wheel==0:
+                f=[math.inf]
+            else:
                 #Calcolo posizione centrale del veicolo, parametro "trackPos"
                 cnt_forza = 0
                 cnt_wheel = 0
 
-                for pos in check_pos_forza:
-                    if pos > 0.7 or pos < -0.7:
-                        cnt_forza +=1
-
-                for pos in check_pos_wheel:
-                    if pos > 0.7 or pos < -0.7:
-                        cnt_wheel +=1
-
-                if len(check_pos_forza) != 0:
-                    check_pos_forza_percentage = cnt_forza/len(check_pos_forza)
+                lf = len(check_pos_forza)
+                lw = len(check_pos_wheel)        
+                
+                if lf != 0:
+                    for pos in check_pos_forza:
+                        if pos > 0.7 or pos < -0.7:
+                            cnt_forza +=1
+                    check_pos_forza_percentage = cnt_forza/lf
                 else:
                     check_pos_forza_percentage = 0
-
-                if len(check_pos_wheel) != 0:
-                    check_pos_wheel_percentage = cnt_wheel/len(check_pos_wheel)
+                
+                if lw != 0:
+                    for pos in check_pos_wheel:
+                        if pos > 0.7 or pos < -0.7:
+                            cnt_wheel +=1
+                    check_pos_wheel_percentage = cnt_wheel/lw
                 else:
                     check_pos_wheel_percentage = 0
 
@@ -90,17 +95,10 @@ if __name__ == "__main__":
                     check_pos_final = 0
                 else:
                     check_pos_final = (check_pos_forza_percentage+check_pos_wheel_percentage)/2
+        
+                f=-(-0.1*penalty+0.6*((distRaced_forza / time_forza) + (distRaced_wheel/time_wheel))/2-0.3*check_pos_final)
 
-                #print("valutata una fitness")
-                #Nel caso in cui la macchina non finisce un giro
-                if time_forza == 0 or time_wheel==0:
-                    f=math.inf
-                else:
-                    f=-(-penalty+((distRaced_forza / time_forza) * (distRaced_wheel/time_wheel))-check_pos_final)
-                
-                print(f)
-
-                solutions.append(str(f))
+            solutions.append(str(f))
 
         # write results
         csvfile_out = open(filepath_out,"a",newline='')

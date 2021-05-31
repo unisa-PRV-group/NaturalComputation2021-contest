@@ -61,27 +61,83 @@ class RaceProblem(Problem):
 
         n=X.shape[0]
 
+        #45% -> 108 -> 0,107 S
+        #35% -> 84 -> 108,191 c1
+        # 48 -> 192,239 c2
+
         # write input files
         with open(filepath_in,"w",newline='') as csvfile:
-            for i in range(n/2):
+            for i in range(108,192):
                 x=X[i]
-                spamwriter = csv.writer(csvfile, delimiter=',', quotechar='""', quoting=csv.QUOTE_MINIMAL)
+                spamwriter = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
                 spamwriter.writerow(x)
 
         with open(filepath_in2,"w",newline='') as csvfile:
-            for i in range(n/2,n):
+            for i in range(192,n):
                 x=X[i]
-                spamwriter = csv.writer(csvfile, delimiter=',', quotechar='""', quoting=csv.QUOTE_MINIMAL)
+                spamwriter = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
                 spamwriter.writerow(x)
 
         # read outputs
         filepath_out=os.path.abspath("F:\\Drive condivisi\\NaturalComputation_FinalContest2021\\output_1.csv")
         filepath_out2=os.path.abspath("F:\\Drive condivisi\\NaturalComputation_FinalContest2021\\output_2.csv")
 
+        solutions = []
+
+        for i in range(108):
+            x=X[i]
+            params=dict(zip(self.params_keys,x))
+            with Pool(2) as p:
+                results=p.starmap(race, [(3001,params),(3002,params)])
+                #print("results here",results)
+                #risultati per il circuito Forza
+                distRaced_forza,time_forza,length_forza,check_pos_forza = results[0]
+                penalty_forza = distRaced_forza-length_forza
+                #Risultati per il circuito Wheel1
+                distRaced_wheel,time_wheel,length_wheel,check_pos_wheel = results[1]
+                penalty_wheel = distRaced_wheel - length_wheel
+                #Penalità
+                penalty = (penalty_wheel+penalty_forza)/2
+                del results
+                p.close()
+        
+            if time_forza == 0 or time_wheel==0:
+                f=[math.inf]
+            else:
+                #Calcolo posizione centrale del veicolo, parametro "trackPos"
+                cnt_forza = 0
+                cnt_wheel = 0
+
+                lf = len(check_pos_forza)
+                lw = len(check_pos_wheel)        
+                
+                if lf != 0:
+                    for pos in check_pos_forza:
+                        if pos > 0.7 or pos < -0.7:
+                            cnt_forza +=1
+                    check_pos_forza_percentage = cnt_forza/lf
+                else:
+                    check_pos_forza_percentage = 0
+                
+                if lw != 0:
+                    for pos in check_pos_wheel:
+                        if pos > 0.7 or pos < -0.7:
+                            cnt_wheel +=1
+                    check_pos_wheel_percentage = cnt_wheel/lw
+                else:
+                    check_pos_wheel_percentage = 0
+
+                if (check_pos_forza_percentage == 0) and (check_pos_wheel_percentage == 0):
+                    check_pos_final = 0
+                else:
+                    check_pos_final = (check_pos_forza_percentage+check_pos_wheel_percentage)/2
+        
+                f=-(-0.1*penalty+0.6*((distRaced_forza / time_forza) + (distRaced_wheel/time_wheel))/2-0.3*check_pos_final)
+
+            solutions.append(str(f))
+
         while not os.path.exists(filepath_out) and not os.path.exists(filepath_out2):
             pass
-
-        solutions = []
 
         with open(filepath_out,"r",newline='') as csvfile:
             csv_reader = csv.reader(csvfile, delimiter=',')
@@ -98,60 +154,9 @@ class RaceProblem(Problem):
         out["F"] = np.array(solutions, dtype='float')
         self.tqdm.update(1)
 
-        #ricostruisco il dizionario dei parametri
-        # params = dict(zip(self.params_keys, X))
-        # with Pool(2) as p:
-        #     results=p.starmap(race, [(3001,params),(3002,params)])
-        #     #print("results here",results)
-        #     #risultati per il circuito Forza
-        #     distRaced_forza,time_forza,length_forza,check_pos_forza = results[0]
-        #     penalty_forza = (distRaced_forza-length_forza) / 10
-        #     #Risultati per il circuito Wheel1
-        #     distRaced_wheel,time_wheel,length_wheel,check_pos_wheel = results[1]
-        #     penalty_wheel = (distRaced_wheel - length_wheel) / 10
-        #     #Penalità
-        #     penalty = penalty_wheel*penalty_forza
-        #     del results
-                
-        # #Calcolo posizione centrale del veicolo, parametro "trackPos"
-        # cnt_forza = 0
-        # cnt_wheel = 0
-
-        # for pos in check_pos_forza:
-        #     if pos > 0.7 or pos < -0.7:
-        #         cnt_forza +=1
-
-        # for pos in check_pos_wheel:
-        #     if pos > 0.7 or pos < -0.7:
-        #         cnt_wheel +=1
-        
-        # if len(check_pos_forza) != 0:
-        #     check_pos_forza_percentage = cnt_forza/len(check_pos_forza)
-        # else:
-        #     check_pos_forza_percentage = 0
-        
-        # if len(check_pos_wheel) != 0:
-        #     check_pos_wheel_percentage = cnt_wheel/len(check_pos_wheel)
-        # else:
-        #     check_pos_wheel_percentage = 0
-
-        # if (check_pos_forza_percentage == 0) and (check_pos_wheel_percentage == 0):
-        #     check_pos_final = 0
-        # else:
-        #     check_pos_final = (check_pos_forza_percentage+check_pos_wheel_percentage)/2
-
-        # #print("valutata una fitness")
-        # #Nel caso in cui la macchina non finisce un giro
-        # if time_forza == 0 or time_wheel==0:
-        #     f=[math.inf]
-        # else:
-        #     f=-(-penalty+((distRaced_forza / time_forza) * (distRaced_wheel/time_wheel))-check_pos_final)
-        # out["F"] = np.array(f, dtype='float')
-        # self.tqdm.update(2)
-
 if __name__ == "__main__":
     # population size
-    n_pop = 100
+    n_pop = 240
     # number of variables for the problem visualization
     n_vars = 48
     # maximum number of generations
@@ -164,13 +169,13 @@ if __name__ == "__main__":
     continue_train = False
 
     # start servers
-    server_forza = Server('forza')
-    server_forza.setDaemon(True)
-    server_forza.start()
-    server_wheel = Server('wheel1')
-    server_wheel.setDaemon(True)
-    server_wheel.start()
-    time.sleep(10)
+    # server_forza = Server('forza')
+    # server_forza.setDaemon(True)
+    # server_forza.start()
+    # server_wheel = Server('wheel1')
+    # server_wheel.setDaemon(True)
+    # server_wheel.start()
+    # time.sleep(10)
 
     # definition of useful paths
     base_path=os.path.realpath(os.path.dirname(__file__))

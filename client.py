@@ -689,8 +689,12 @@ def initialize_car(c):
 
 #res={p:{'lastLapTime':-1, 'circuitLength':-1, 'distRaced':-1} for p in [3001,3002]}
 
-def race(p, params):
+def race(p, params, test=False):
     #print ("Thread {} partito\n".format(p))
+    speeds = []
+    times = []
+    first_lap = 0
+
     tot_time=0
     oldLapTime=0
     laps=0
@@ -717,6 +721,14 @@ def race(p, params):
             tot_time+=C.S.d['lastLapTime']
             oldLapTime = C.S.d['lastLapTime']
             laps+=1
+            if laps==1:
+                first_lap=oldLapTime
+        if test and laps==0:
+            speeds.append(C.S.d['speedX'])
+            times.append(C.S.d['curLapTime'])
+        elif test and laps==1:
+            speeds.append(C.S.d['speedX'])
+            times.append(first_lap+C.S.d['curLapTime'])
         drive(C,step)
         if laps==2:
             break
@@ -728,4 +740,4 @@ def race(p, params):
     C.shutdown()
     #res[p]['distRaced']=C.S.d['distRaced']
     #res[p]['circuitLength']=T.laplength
-    return (C.S.d['distRaced'], tot_time, T.laplength*2, check_pos)
+    return (C.S.d['distRaced'], tot_time, T.laplength*2, check_pos) if not test else (speeds,times,first_lap)
