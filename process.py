@@ -8,6 +8,7 @@ from tqdm import tqdm
 from client import race
 from Server import Server
 import time
+import random
 
 # recover params name
 base_path=os.path.realpath(os.path.dirname(__file__))
@@ -17,93 +18,96 @@ lb = json.load(f)
 f.close()
 params={k:-1 for k in lb.keys()}
 
-# n_pop=100
-# bar = tqdm(total=n_pop, disable=True)
+#bar = tqdm(total=84)
 
-filepath_out=os.path.abspath("F:\\Drive condivisi\\NaturalComputation_FinalContest2021\\output_1.csv")
-filepath_in=os.path.abspath("F:\\Drive condivisi\\NaturalComputation_FinalContest2021\\input_1.csv")
+def read_file(filename):
+    parameters = []
+    with open(filename, 'r') as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        for row in csv_reader:
+                parameters.append([])
+                for value in row:
+                    parameters[-1].append(float(value))
+    os.remove(filename)
+    return parameters
 
 if __name__ == "__main__":
-    server_forza = Server('forza')
-    server_forza.setDaemon(True)
-    server_forza.start()
-    server_wheel = Server('wheel1')
-    server_wheel.setDaemon(True)
-    server_wheel.start()
-    time.sleep(10)
+    gen=1
 
-    csvfile_in = open(filepath_in,"r",newline='')
-    csv_reader = csv.reader(csvfile_in, delimiter=',')
-
-    solutions=[]
+    map_couples = {'1':["forza","wheel1"], '2':["forza","etrack"], '3':["gtrack","wheel1"], '4':["gtrack","etrack"]}
+    ports = {'1':[3001,3002], '2':[3001,3004], '3':[3003,3002], '4':[3003,3004]}
+    couples = list(map_couples.keys())
+    cnt_couples = {'1':0, '2':0, '3':0, '4':0}
+    last_couple = ""
+    limit = 100/len(couples)
 
     while True:
-        # bar.disable=False
-        # if bar.n!=0: bar.reset()
+
+        solutions=[]
+
+        # choose servers couple
+        while(True):
+            r=random.choice(couples) #1,n n=numero circuiti
+            if r!=last_couple:
+                last_couple=r
+                cnt_couples[r]+=1
+                if cnt_couples[r]==limit: couples.remove(r)
+                break
+        couple = map_couples[last_couple]
+        s1 = Server(couple[0])
+        s1.setDaemon(True)
+        s1.start()
+        s2 = Server(couple[1])
+        s2.setDaemon(True)
+        s2.start()
+
+        filepath_out=os.path.abspath("F:\\Drive condivisi\\NaturalComputation_FinalContest2021\\output_1.csv")
+        filepath_in=os.path.abspath("F:\\Drive condivisi\\NaturalComputation_FinalContest2021\\input_1.csv")
 
         while not os.path.exists(filepath_in):
             pass
         
-        print("File here")
-            
-        for row in csv_reader: # for each individual, aka 48 params
-            if len(row)!=0:
+        print("File here - gen: ",gen)
+
+        individuals = read_file(filepath_in)
+        
+        with tqdm(total=len(individuals)) as pbar:
+            for ind in individuals: # for each individual, aka 48 params
+                #start = time.time()
                 for i,k in enumerate(params.keys()):
-                    params[k]=float(row[i])
+                    params[k]=ind[i]
 
-            with Pool(2) as p:
-                results=p.starmap(race, [(3001,params),(3002,params)])
-                #print("results here",results)
-                #risultati per il circuito Forza
-                distRaced_forza,time_forza,length_forza,check_pos_forza = results[0]
-                penalty_forza = distRaced_forza-length_forza
-                #Risultati per il circuito Wheel1
-                distRaced_wheel,time_wheel,length_wheel,check_pos_wheel = results[1]
-                penalty_wheel = distRaced_wheel - length_wheel
-                #Penalità
-                penalty = (penalty_wheel+penalty_forza)/2
-                del results
-                p.close()
-        
-            if time_forza == 0 or time_wheel==0:
-                f=[math.inf]
-            else:
-                #Calcolo posizione centrale del veicolo, parametro "trackPos"
-                cnt_forza = 0
-                cnt_wheel = 0
+                with Pool(2) as p:
+                    results=p.starmap(race, [(ports[last_couple][0],params),(ports[last_couple][1],params)])
+                    #print("results here",results)
+                    #risultati per il circuito Forza
+                    distRaced_1,time_1,length_1,check_pos_1 = results[0]
+                    penalty_1 = distRaced_1-length_1
+                    #Risultati per il circuito Wheel1
+                    distRaced_2,time_2,length_2,check_pos_2 = results[1]
+                    penalty_2 = distRaced_2 - length_2
+                    #Penalità
+                    penalty = (penalty_1*penalty_2 + len(check_pos_1)*len(check_pos_2))/100000
+                    del results
+            
+                if time_1 == 0 or time_2==0:
+                    f=math.inf
+                else:
+                    f=-(-penalty+2*((distRaced_1 / time_1) * (distRaced_2/time_2)))
 
-                lf = len(check_pos_forza)
-                lw = len(check_pos_wheel)        
+                solutions.append(f)
                 
-                if lf != 0:
-                    for pos in check_pos_forza:
-                        if pos > 0.7 or pos < -0.7:
-                            cnt_forza +=1
-                    check_pos_forza_percentage = cnt_forza/lf
-                else:
-                    check_pos_forza_percentage = 0
-                
-                if lw != 0:
-                    for pos in check_pos_wheel:
-                        if pos > 0.7 or pos < -0.7:
-                            cnt_wheel +=1
-                    check_pos_wheel_percentage = cnt_wheel/lw
-                else:
-                    check_pos_wheel_percentage = 0
-
-                if (check_pos_forza_percentage == 0) and (check_pos_wheel_percentage == 0):
-                    check_pos_final = 0
-                else:
-                    check_pos_final = (check_pos_forza_percentage+check_pos_wheel_percentage)/2
-        
-                f=-(-0.1*penalty+0.6*((distRaced_forza / time_forza) + (distRaced_wheel/time_wheel))/2-0.3*check_pos_final)
-
-            solutions.append(str(f))
+                pbar.update(1)
 
         # write results
-        csvfile_out = open(filepath_out,"a",newline='')
+        print(len(solutions)," calculated")
+        csvfile_out = open(filepath_out,"w",newline='')
         spamwriter = csv.writer(csvfile_out, delimiter=',', quoting=csv.QUOTE_MINIMAL)
-        spamwriter.writerow(solutions)
-        print("Finished")
-
-                # tqdm.update(2)
+        for s in solutions:
+            spamwriter.writerow([s])
+        print("Finished - gen: ",gen)
+        csvfile_out.close()
+        gen+=1
+        s1.stop()
+        s2.stop()
+    exit()
