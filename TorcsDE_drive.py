@@ -21,22 +21,38 @@ from pymoo.operators.sampling.latin_hypercube_sampling import LatinHypercubeSamp
 from pymoo.model.callback import Callback
 
 class CustomCallback(Callback):
-    def __init__(self, n_gen) -> None:
+    def __init__(self, n_gen, path_res, path_param, keys) -> None:
         super().__init__()
         self.data["best"] = []
         self.data["avg"] = []
         self.data["stddev"] = []
         self.data["lastGen"] = []
-        self.cnt=n_gen
+        self.cnt_gen=0
+        self.max_gen=n_gen
+        self.last_save = 0
+        self.path_res=path_res
+        self.path_param=path_param
+        self.param_keys=keys
 
     def notify(self, algorithm):
         f_array = -algorithm.pop.get("F")
         self.data["best"].append(f_array.min())
         self.data["avg"].append(np.average(f_array))
         self.data["stddev"].append(np.std(f_array))
-        self.cnt-=1
-        if self.cnt==0:
+
+        self.cnt_gen+=1
+        self.last_save+=1
+        if self.last_save==5:
             self.data["lastGen"]=algorithm.pop.get("X").tolist()
+            self.last_save=0
+            f=open(os.path.join(path_dir_p,"trained_params_{}_gen".format(self.cnt_gen)),"w")
+            json.dump(dict(zip(self.param_keys, self.data["lastGen"])),f)
+            f.close()
+
+            f=open(os.path.join(path_dir,"logs_{}_gen".format(self.cnt_gen)),"w")
+            json.dump(self.data,f)
+            f.close()
+            
 
 class RaceProblem(Problem):
     #xl=[63.7655, 1.4188, 1.0383, 2.0183, 2.0627, 33.8688, 81.3069, 45.2619, 0.0100, 3411.4781, 5366.0837, 5965.5188, 6315.7639, 6360.9504, 0.7379, 18.06372, 10.7936, 1.2082, 90.5418, 1.0003, 0.0659, 2.1964, 0.4602, 2.5537, 0.0013, 25.1222, 0.4613, 0.0090, 1.2033, 0.1025, 1.7450, 0.0514, 551.9643, 263.3230, 0.8552, 0.1438, 395.5263, 16.0833, 0.2760, 0.5786, 0.9002, 8099.1962, 8091.3063, 8097.7155, 8204.8691, 8935.8770, 0.6843, 3.8140],
@@ -219,6 +235,9 @@ if __name__ == "__main__":
     # recover params
     dirname = "DE_{}{}{}{}{}".format(n_pop,max_gens,CR,F,seed)
     path_dir = os.path.join(res_path,dirname)
+    path_dir_p = os.path.join(param_path, dirname)
+    if not os.path.exists(path_dir_p): #training da zero
+        os.mkdir(path_dir_p)
     if not os.path.exists(path_dir): #training da zero
         os.mkdir(path_dir)
     elif continue_train:
@@ -233,7 +252,7 @@ if __name__ == "__main__":
     problem=RaceProblem(param_path, n_pop, max_gens)
 
     termination = get_termination("n_gen", max_gens)
-    callback=CustomCallback(n_gen=max_gens)
+    callback=CustomCallback(max_gens, path_dir, path_dir_p, problem.params_keys)
 
     algorithm = DE(pop_size=n_pop, sampling=sampling,
                    variant="DE/rand/1/bin", CR=CR, F=F, dither="vector", jitter=True,
@@ -242,9 +261,6 @@ if __name__ == "__main__":
     res = minimize(problem, algorithm, termination, callback=callback, seed=seed, verbose=False, save_history=False)
     
     # save best params
-    path_dir_p = os.path.join(param_path, dirname)
-    if not os.path.exists(path_dir_p): #training da zero
-        os.mkdir(path_dir_p)
     f=open(os.path.join(path_dir_p,"trained_params_{}_gen".format(max_gens)),"w")
     json.dump(dict(zip(problem.params_keys, res.X)),f)
     f.close()
