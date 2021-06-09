@@ -687,10 +687,10 @@ def initialize_car(c):
     R['focus']= 0 
     c.respond_to_server() 
 
-#res={p:{'lastLapTime':-1, 'circuitLength':-1, 'distRaced':-1} for p in [3001,3002]}
+
+#### FUNZIONE PRINCIPALE PER LANCIARE LA GARA ####
 
 def race(p, params, test=False):
-    #print ("Thread {} partito\n".format(p))
     speeds = []
     times = []
     first_lap = 0
@@ -699,8 +699,9 @@ def race(p, params, test=False):
     oldLapTime=0
     laps=0
     global T
-    #global res
-    check_pos = []
+
+    # CHECK_POS_TRESHOLD = 0.5
+    # cnt_check_pos = 0
     T= Track()
     C= snakeoil.Client(p=p, parameters=params)
     if C.stage == 1 or C.stage == 2:
@@ -714,30 +715,39 @@ def race(p, params, test=False):
     C.S.d['stucktimer']= 0
     C.S.d['targetSpeed']= 0
     for step in range(C.maxSteps,0,-1):
-        C.get_servers_input()
-        check_pos.append(C.S.d['trackPos'])
-        if C.S.d['lastLapTime']!=oldLapTime:
-            #res[p]['lastLapTime']=C.S.d['lastLapTime']
-            tot_time+=C.S.d['lastLapTime']
-            oldLapTime = C.S.d['lastLapTime']
-            laps+=1
-            if laps==1:
-                first_lap=oldLapTime
-        if test and laps==0:
-            speeds.append(C.S.d['speedX'])
-            times.append(C.S.d['curLapTime'])
-        elif test and laps==1:
-            speeds.append(C.S.d['speedX'])
-            times.append(first_lap+C.S.d['curLapTime'])
-        drive(C,step)
-        if laps==2:
+        # controlliamo che la comunicazione col server sia andata a buon fine, altrimenti ritorniamo tempo=0
+        # in modo da far assegnare fitness infinita 
+        if C.get_servers_input()==False: 
+            print("ERROR")
+            tot_time=0
             break
-        C.respond_to_server()
+        else:
+            # if C.S.d['trackPos']>CHECK_POS_TRESHOLD or C.S.d['trackPos']<-CHECK_POS_TRESHOLD:
+            #     cnt_check_pos += 1
+            if C.S.d['lastLapTime']!=oldLapTime: # check di fine giro
+                tot_time+=C.S.d['lastLapTime']
+                oldLapTime = C.S.d['lastLapTime']
+                laps+=1
+                if laps==1: # serve per il profilo di velocità
+                    first_lap=oldLapTime
+            if test and laps==0: # serve per il profilo di velocità
+                speeds.append(C.S.d['speedX'])
+                times.append(C.S.d['curLapTime'])
+            elif test and laps==1: # serve per il profilo di velocità
+                speeds.append(C.S.d['speedX'])
+                times.append(first_lap+C.S.d['curLapTime'])
+            drive(C,step)
+            # stoppare la gara al secondo giro prendendo i risultati 
+            # perchè nell'XML dobbiamo mettere un numero di giri >2 altrimenti i risultati non sono corretti
+            if laps==2: 
+                break
+            C.respond_to_server()
     if not C.stage:  
         T.write_track(C.trackname)
-    C.R.d['meta']= 1
+    C.R.d['meta']=1
     C.respond_to_server()
     C.shutdown()
-    #res[p]['distRaced']=C.S.d['distRaced']
-    #res[p]['circuitLength']=T.laplength
-    return (C.S.d['distRaced'], tot_time, T.laplength*2, check_pos) if not test else (speeds,times,first_lap)
+    # valori di ritorno senza avversari
+    # return (C.S.d['distRaced'], tot_time, T.laplength*2) if not test else (speeds,times,first_lap)
+    # valori di ritorno con avversari
+    return (C.S.d['distRaced'], tot_time, T.laplength*2, C.S.d['racePos'], C.S.d['damage']) if not test else (speeds,times,first_lap)

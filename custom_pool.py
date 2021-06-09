@@ -1,3 +1,6 @@
+## CLASSE PER CREARE THREAD NON DAEMON USANDO LA LIBRERIA POOL ##
+# utile se vogliamo parallelizzare perchè la classe Pool non permette di avere altri figli, quindi si deve istanziare CustomPool
+
 import multiprocessing
 from multiprocessing.pool import Pool
 from multiprocessing import Process

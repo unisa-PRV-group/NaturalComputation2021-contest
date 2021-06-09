@@ -14,8 +14,9 @@ import tqdm
 from Server import Server
 import time
 import warnings
+import random
 warnings.filterwarnings("ignore")
-from recover_params import recover_params
+from fitness_func import fitness_single_circuit
 
 # paths
 base_path=os.path.realpath(os.path.dirname(__file__))
@@ -37,163 +38,146 @@ bounds=(lower_bounds,upper_bounds)
 tqdm=tqdm.tqdm()
 stats = {'best':[], 'avg':[], 'stddev':[]}
 
-def fitness(X):
+map_couples = {'1':"1", '2':"2", '3':"3", '4':"4"}
+ports = {'1':3001, '2':3002, '3':3003, '4':3004}
+cnt_gen = 0
+
+def choose_circuits(seed,max_gen):
+    couples_per_gen = []
+
+    gen=1
+
+    couples = ['1','2','3','4']
+    cnt_couples = {'1':0, '2':0, '3':0, '4':0}
+    last_couple = ""
+    limit = max_gen/len(couples)
+
+    random.seed(seed)
+
+    while gen<=max_gen:
+        #print("\nGen: {} -> couples: {}; last couple: {}".format(gen, couples, last_couple))
+        while True:
+            if len(couples)>1:
+                r=random.choice(couples) #1,n n=numero circuiti
+                #print("Generated couple n.{}".format(r))
+                if r!=last_couple:
+                    #print("Right couple generated")
+                    last_couple=r
+                    cnt_couples[r]+=1
+                    #print("Current counts: ",cnt_couples)
+                    if cnt_couples[r]==limit:
+                        couples.remove(r)
+                        #print("Couple {} has overcomed limit".format(r))
+                    couples_per_gen.append(last_couple)
+                    break
+                #else: print("Couple already generated")
+            else: 
+                #print("One element only -> choose it")
+                r=couples[0]
+                cnt_couples[r]+=1
+                couples_per_gen.append(r)
+                if cnt_couples[r]==limit:
+                    couples.remove(r)
+                    #print("Couple {} has overcomed limit".format(r))
+                break
+        gen+=1
+        #time.sleep(1)
+    return couples_per_gen
+
+map_couples = {'1':"forza", '2':"wheel1", '3':"gtrack", '4':"etrack"}
+circ_per_gen = choose_circuits(11111, 48) #Numero di generazioni
+ports = {'1':3001, '2':3002, '3':3003, '4':3004}
+
+def fitness(X,**args):
+    global cnt_gen
+    cnt_gen += 1
     n=X.shape[0]
     f_results=[]
     for i in range(n):
         x=X[i]
-        params = dict(zip(params_keys, x))
-
-        with Pool(2) as p:
-            results=p.starmap(race, [(3001,params),(3002,params)])
-            #print("results here",results)
-            #risultati per il circuito Forza
-            distRaced_forza,time_forza,length_forza,check_pos_forza = results[0]
-            penalty_forza = (distRaced_forza-length_forza) / 10
-            #Risultati per il circuito Wheel1
-            distRaced_wheel,time_wheel,length_wheel,check_pos_wheel = results[1]
-            penalty_wheel = (distRaced_wheel - length_wheel) / 10
-            #Penalità
-            penalty = penalty_wheel*penalty_forza
-            del results
-                
-        #Calcolo posizione centrale del veicolo, parametro "trackPos"
-        cnt_forza = 0
-        cnt_wheel = 0
-
-        for pos in check_pos_forza:
-            if pos > 0.7 or pos < -0.7:
-                cnt_forza +=1
-
-        for pos in check_pos_wheel:
-            if pos > 0.7 or pos < -0.7:
-                cnt_wheel +=1
         
-        if len(check_pos_forza) != 0:
-            check_pos_forza_percentage = cnt_forza/len(check_pos_forza)
-        else:
-            check_pos_forza_percentage = 0
+        c = map_couples[circ_per_gen[cnt_gen-1]]
         
-        if len(check_pos_wheel) != 0:
-            check_pos_wheel_percentage = cnt_wheel/len(check_pos_wheel)
-        else:
-            check_pos_wheel_percentage = 0
+        #Start Server
+        s1 = Server(c)
+        s1.setDaemon(True)
+        s1.start()
 
-        if (check_pos_forza_percentage == 0) and (check_pos_wheel_percentage == 0):
-            check_pos_final = 0
-        else:
-            check_pos_final = (check_pos_forza_percentage+check_pos_wheel_percentage)/2
+        f = fitness_single_circuit(x,ports[circ_per_gen[cnt_gen-1]],s1,c)
 
-        #print("valutata una fitness")
-        #Nel caso in cui la macchina non finisce un giro
-        if time_forza == 0 or time_wheel==0:
-            f_results.insert(0, math.inf)
-        else:
-            f=-(-penalty+((distRaced_forza / time_forza) * (distRaced_wheel/time_wheel))-check_pos_final)
-            f_results.insert(0, f)
-        tqdm.update(2)
+        s1.stop(True)
+        tqdm.update(1)
+    f_results.append(f)
     
     # save stats per gen
-    #stats["best"].append(-min(f_results))
+    opt=args["opt"]
     stats["avg"].append(np.average([-1*f for f in f_results]))
     stats["stddev"].append(np.std([-1*f for f in f_results]))
+    stats["best"].append(-min(f_results))
+    stats["lastGen"]=(opt.pos_history[-1]).tolist() #salvo tutti i valori dell'ultima generazione
+
+    # save best params
+    path_dir_p=args["path_res"]
+    f=open(os.path.join(path_dir_p,"trained_params_{}_gen".format(iterations)),"w")
+    json.dump(dict(zip(params_keys, pos)),f)
+    f.close()
+
+    path_dir=args["path_logs"]
+    f=open(os.path.join(path_dir,"logs_{}_gen".format(iterations)),"w")
+    json.dump(stats,f)
+    f.close()
     
+    s1.stop(True)
+
     return f_results
 
-
 if __name__ == "__main__":
-    # start servers
-    server_forza = Server('forza')
-    server_forza.setDaemon(True)
-    server_forza.start()
-    server_wheel = Server('wheel1')
-    server_wheel.setDaemon(True)
-    server_wheel.start()
-    time.sleep(10)
 
     # Set-up hyperparameters #
     continue_train=False
-    seed = 10
+    seed = 11111
     c1=1.49618
     c2=1.49618
     w=0.7298
     options = {'c1': c1, 'c2': c2, 'w': w}#, 'k': 2, 'p': 2} 
     problem_size = 48
-    swarm_size = 96
-    iterations = 15
+    swarm_size = 144
+    iterations = 48
 
-    tqdm.total=2*swarm_size*iterations
+    tqdm.total=swarm_size*iterations
 
-    init_pos = None
-    dirname = "PSO_{}{}{}{}{}".format(swarm_size,iterations,c1,c2,w)
+    ## DEFINIZIONE DI PATHS ##
+    base_path=os.path.realpath(os.path.dirname(__file__))
+    param_path=os.path.join(base_path,"parameters")
+    res_path=os.path.join(base_path,"results")
+
+    # convenzione: algoritmo_{popsize}{maxgen}{c1}{c2}{w}{seed}
+    dirname="PSO_240100.60.810" # cartella in cui salvare i risultati
     path_dir = os.path.join(res_path,dirname)
-    if not os.path.exists(path_dir): #training da zero
+    path_dir_p = os.path.join(param_path, dirname)
+    if not os.path.exists(path_dir_p):
+        os.mkdir(path_dir_p)
+    if not os.path.exists(path_dir):
         os.mkdir(path_dir)
-    elif continue_train:
-        path=recover_params(path_dir)
-        if path!="":
-            f=open(os.path.join(res_path,path),"r")
-            params=json.load(f)['lastGen']
-            f.close()
-            init_pos = np.vstack([[c] for c in params])
 
+    # MODIFICARE QUESTO FLAG PER FAR PARTIRE IL TRAINING DA UNO VECCHIO
+    continue_train = False
+
+    if continue_train:
+        filepath = "logs_20_gen_7" # file da cui recuperare la generazione di partenza
+        f=open(os.path.join(res_path,filepath),"r")
+        params=json.load(f)['lastGen']
+        f.close()
+        init_pos = np.vstack([[c] for c in params])
+    else: init_pos=None
+
+    ## PROBLEM DEFINITION ##
     np.random.seed(seed)
     optimizer = ps.single.GlobalBestPSO(n_particles=swarm_size, dimensions=problem_size, options=options, bounds=bounds, init_pos=init_pos)
-    cost, pos = optimizer.optimize(fitness, iters=iterations, verbose=False)
+    args={"opt":None, "path_logs":path_dir, "path_res":path_dir_p}
+    cost, pos = optimizer.optimize(fitness, iters=iterations, verbose=False, kwargs=args)
     print("Best solution found: \nX = %s\nF = %s" % ([-1*p for p in pos], -cost))
 
-    stats["lastGen"]=(optimizer.pos_history[-1]).tolist() #salvo tutti i valori dell'ultima generazione (96,48)
-    stats["best"]=optimizer.cost_history
-
-    # save best params
-    path_dir_p = os.path.join(param_path, dirname)
-    if not os.path.exists(path_dir_p): #training da zero
-        os.mkdir(path_dir_p)
-    f=open(os.path.join(path_dir_p,"trained_params_{}_gen".format(iterations)),"w")
-    json.dump(dict(zip(params_keys, pos)),f)
-    f.close()
-
-    f=open(os.path.join(path_dir,"logs_{}_gen".format(iterations)),"w")
-    json.dump(stats,f)
-    f.close()
-
-    # # recover history
-    # best = stats["best"]
-    # avgs = stats["avg"]
-    # stddevs = stats["stddev"]
-
-    # # plot convergence
-    # plt.title("Convergence")
-    # plt.plot(list(range(1,iterations+1,1)), best)
-    # plt.xlabel("Generation")
-    # plt.ylabel("Fitness")
-    # plt.yscale("log")
-    # plt.xlim((1,iterations))
-    # #plt.show()
-    # plt.savefig(os.path.join(fig_path,"{}_gen_convergence_PSO.png".format(iterations)))
-
-    # plt.clf()
-
-    # # plot avg per gen
-    # plt.title("Fitness avg per gen")
-    # plt.plot(list(range(1,iterations+1,1)), avgs)
-    # plt.xlabel("Generation")
-    # plt.ylabel("Fitness avg")
-    # plt.yscale("log")
-    # plt.xlim((1,iterations))
-    # #plt.show()
-    # plt.savefig(os.path.join(fig_path,"{}_gen_avg_PSO.png".format(iterations)))
-
-    # plt.clf()
-
-    # # plot stddev per gen
-    # plt.title("Fitness stddev per gen")
-    # plt.plot(list(range(1,iterations+1,1)), stddevs)
-    # plt.xlabel("Generation")
-    # plt.ylabel("Fitness stddev")
-    # plt.yscale("log")
-    # plt.xlim((1,iterations))
-    # #plt.show()
-    # plt.savefig(os.path.join(fig_path,"{}_gen_stddev_PSO.png".format(iterations)))
-
     exit()
+
+# TEMPO STIMATO: 41 ore

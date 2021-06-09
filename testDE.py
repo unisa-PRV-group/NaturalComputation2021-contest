@@ -6,45 +6,27 @@ import matplotlib.pyplot as plt
 import time
 from multiprocessing.pool import Pool
 
+f_without_opp = "trained_params_32_gen_3"
+f_opp = "trained_params_20_gen_7"
+
+base_path=os.path.realpath(os.path.dirname(__file__))
+param_path=os.path.join(base_path,"parameters")
+
 def graphic_simulation():
-    base_path=os.path.realpath(os.path.dirname(__file__))
-    param_path=os.path.join(base_path,"parameters")
-    
-    f=open(os.path.join(param_path,"default_parameters"),"r")
-    speeds_def, times_def, first_lap_def = race(3001,dict(json.load(f)),test=True)
-    print("Default race finished")
+    f=open(os.path.join(param_path,"DE_240100.60.810_opp/{}".format(f_without_opp)),"r")
+    race(3001,dict(json.load(f)),test=True)
     f.close()
 
-    f=open(os.path.join(param_path,"DE_96150.60.810/trained_params_15_gen"),"r")
-    speeds, times, first_lap = race(3001,dict(json.load(f)),test=True)
-    f.close()
-    print("Trained race finished")
-
-    plt.figure()
-    plt.title("Speed profile")
-    plt.plot(times, [s for s in speeds], color="blue")
-    plt.plot(times_def, [s for s in speeds_def], color="orange")
-    plt.legend(["Trained", "Default"])
-    plt.ylabel("Speed (km/h)")
-    plt.xlabel("Time (s)")
-    plt.axvline(x=first_lap, linestyle="dashed", color="blue")
-    plt.axvline(x=first_lap_def, linestyle="dashed", color="orange")
-
-    plt.show()
-
-def quick_simulation():
+def quick_simulation_with_speed_profile():
     circuit1 = 'cgtrack2'
     circuit2 = 'etrack3'
-    server_forza = Server(circuit1)
-    server_forza.setDaemon(True)
-    server_forza.start()
-    server_wheel = Server(circuit2)
-    server_wheel.setDaemon(True)
-    server_wheel.start()
+    server_1 = Server(circuit1)
+    server_1.setDaemon(True)
+    server_1.start()
+    server_2 = Server(circuit2)
+    server_2.setDaemon(True)
+    server_2.start()
     time.sleep(10)
-
-    base_path=os.path.realpath(os.path.dirname(__file__))
-    param_path=os.path.join(base_path,"parameters")
 
     # default
     with Pool(2) as p:
@@ -58,7 +40,7 @@ def quick_simulation():
 
     # nostro
     with Pool(2) as p:
-        f=open(os.path.join(param_path,"DE_96150.60.810/trained_params_15_gen"),"r")
+        f=open(os.path.join(param_path,"DE_96150.60.810/trained_params_32_gen_3"),"r")
         params=dict(json.load(f))
         f.close()
         results_trained=p.starmap(race, [(3001,params,True),(3002,params,True)])
@@ -87,7 +69,10 @@ def quick_simulation():
     plt.axvline(x=results_def[1][2], linestyle="dashed", color="orange")
     plt.show()
 
+    server_1.stop(True)
+    server_2.stop()
+
     exit()
 
 if __name__ == "__main__":
-    quick_simulation()
+    graphic_simulation()

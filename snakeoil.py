@@ -56,6 +56,7 @@ import socket
 import json
 import sys
 import getopt
+import time
 PI= 3.14159265359
 
 # Initialize help messages
@@ -230,10 +231,11 @@ class Client():
         while True:
             try:
                 # Receive server data 
-                sockdata,addr= self.so.recvfrom(1024)
+                sockdata,_= self.so.recvfrom(1024)
             except socket.error as emsg:
-                print('.'),
-                #print "Waiting for data on %d.............." % self.port
+                print("SOCKET ERROR: ",emsg)
+                print ("Waiting for data on %d.............." % self.port)
+                return False
             if type(sockdata) == bytes:
                 if b'***identified***' in sockdata:
                     print("Client connected on %d.............." % self.port)
@@ -242,22 +244,26 @@ class Client():
                     print(("Server has stopped the race on %d. "+
                             "You were in %d place.") %
                             (self.port,self.S.d['racePos']))
+                    self.respond_to_server()
                     self.shutdown()
-                    return
+                    return False
+                    # return
                 elif b'***restart***' in sockdata:
                     # What do I do here?
                     print("Server has restarted the race on %d." % self.port)
                     # I haven't actually caught the server doing this.
                     self.shutdown()
-                    return
+                    return False
+                    # return
                 elif not sockdata: # Empty?
                     continue       # Try again.
                 else:
                     self.S.parse_server_str(sockdata)
                     if self.debug:
                         sys.stderr.write("\x1b[2J\x1b[H") # Clear for steady output.
-                        print(self.S)
-                    break # Can now return from this function.
+                        #print(self.S)
+                    # break # Can now return from this function.
+                    return True
 
     def respond_to_server(self):
         if not self.so: return
