@@ -140,7 +140,7 @@ class RaceProblem(Problem):
             solutions.append(sol)
             self.tqdm.update(1)
 
-        out["F"] = np.array(f, dtype='float')
+        out["F"] = np.array(solutions, dtype='float')
 
 if __name__ == "__main__":
     # population size
