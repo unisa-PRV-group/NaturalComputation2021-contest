@@ -20,8 +20,8 @@ Partendo dai parametri trovati senza avversari, allenare con una fitness semplic
 
 ## FITNESS USATE
 * SENZA AVVERSARI
-  * 40 generazioni (_2) => **f = -(V1\*V2 - (L1-D1)\*(L1-D1)/100)** 
-  * 150 generazioni (_3+_4) => **f = -(V1\*V2 - (L1-D1)\*(L1-D1)/1000)**
+  * 40 generazioni (_2) => **f = -(V1\*V2 - (D1-L1)\*(D2-L2)/100)** 
+  * 150 generazioni (_3+_4) => **f = -(V1\*V2 - (D2-L2)\*(D2-L2)/1000)**
 * CON AVVERSARI
   * (BEST) 75 generazioni (_opponentsF1)=> **f=-((F1_points(racePos1)+F1_points(racePos1))-(t1+t2))**
   * Aggiunta di **damage** ma senza migliorie
