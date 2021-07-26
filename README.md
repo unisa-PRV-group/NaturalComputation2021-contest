@@ -20,15 +20,11 @@ Partendo dai parametri trovati senza avversari, allenare con una fitness semplic
 
 ## FITNESS USATE
 * SENZA AVVERSARI
-  * 40 generazioni (_2) => **f = -(V1\*V2 - (D1-L1)\*(D2-L2)/100)** 
-  * 150 generazioni (_3+_4) => **f = -(V1\*V2 - (D2-L2)\*(D2-L2)/1000)**
+  * 1e - 40 generazioni (_2) => **f = -(V1\*V2 - (D1-L1)\*(D2-L2)/100)** 
+  * 2e - 150 generazioni (_3+_4) => **f = -(V1\*V2 - (D2-L2)\*(D2-L2)/1000)**
 * CON AVVERSARI
-  * 75 generazioni (_opponentsF1)=> **f=-((F1_points(racePos1)+F1_points(racePos1))-(t1+t2))**
-  * Aggiunta di **damage** ma senza migliorie
-  * Prova con **un solo circuito contemporaneamente** ma senza migliorie (_opponentsF1_2)
-  * -----
-  * Mancano i risultati del 4o esperimento => **f=-((F1_points(racePos1)+F1_points(racePos1))*10-(t1+t2)*10 -(damage1+damage2))**. Nel config partiamo in ultima posizione. Addestramento su tutti e quattro i circuiti. Addestramento partito dal secondo esperimento.
-  * (BEST) 67 generazioni (trained_params_67_gen_opponents_1) => **f = -((F1_points(racePos1)+F1_points(racePos1))*10 + (distRaced_1/time_1+distRaced_2/time_2)*10 - (damage1+damage2))** . Nel config partiamo in ultima posizione. Solo due circuiti (Forza e Wheel). Solo 5 avversari. Addestramento partito dal secondo esperimento.
-  * 60 generazioni (trained_params_60_gen_opponents_2) => **f = stessa fitness dell'esperimento precedente**. Nel config partiamo in 4a posizione.  Solo due circuiti (Forza e Wheel). Addestramento partito dal secondo esperimento.
-  *  + ? generazioni (trained_params_{}_gen_opponents_3) da sommare a quello precedente => **f = stessa fitness dell'esperimento precedente**. Nel config partiamo in 4a posizione.  Solo due circuiti (Forza e Wheel). Addestramento continua dall'esperimento precedente.
-* 100 generazioni (trained_params_{}_gen_opponents_4) => **f = stessa fitness dell'esperimento precedente**. Nel config partiamo in ultima posizione (9).  Solo due circuiti (Forza e Wheel). Addestramento partito dal secondo esperimento.
+  * 3e - 75 generazioni (_opponentsF1)=> **f=-((F1_points(racePos1)+F1_points(racePos1))*10-(t1+t2)*10 -(damage1+damage2))** . Nel config partiamo in ultima posizione. Addestramento su tutti e quattro i circuiti (vecchia versione), dovremmo rifarlo con solo due circuiti (Forza e Wheel). Addestramento partito dal secondo esperimento. NOTE: Aggiunta di **damage** ma senza migliorie. Prova con **un solo circuito contemporaneamente** ma senza migliorie (_opponentsF1_2).
+  * 4e - 67 generazioni (trained_params_67_gen_opponents_1) => **f = -((F1_points(racePos1)+F1_points(racePos1))*10 + (distRaced_1/time_1+distRaced_2/time_2)*10 - (damage1+damage2))** . Nel config partiamo in ultima posizione. Solo due circuiti (Forza e Wheel). Solo 5 avversari. Addestramento partito dal secondo esperimento.
+  * 5e - 60 generazioni (trained_params_60_gen_opponents_2) => **f = stessa fitness dell'esperimento precedente**. Nel config partiamo in 4a posizione.  Solo due circuiti (Forza e Wheel). Addestramento partito dal secondo esperimento.
+  * 5e - 127 generazioni (trained_params_127_gen_opponents_3) da sommare a quello precedente => **f = stessa fitness dell'esperimento precedente**. Nel config partiamo in 4a posizione.  Solo due circuiti (Forza e Wheel). Addestramento continua dall'esperimento precedente.
+  * 6e - x generazioni (trained_params_{}_gen_opponents_4) => **f = stessa fitness dell'esperimento precedente**. Nel config partiamo in ultima posizione (9).  Solo due circuiti (Forza e Wheel). Addestramento partito dal secondo esperimento.
