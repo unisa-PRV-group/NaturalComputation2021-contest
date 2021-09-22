@@ -1,30 +1,21 @@
-# NaturalComputation2021-contest
+# Natural Computation 2021 - Project
+This repository is created for the project related to the "Natural Computation" subject at the University of Salerno. 
 
-## PARAMETERS & RESULTS
-* il file **trained_params/logs_10_gen** è quello da cui siamo partiti
-* Il file **trained_params/logs_45_gen_2** è quello ottenuto con la fitness classica VxV-dxd in cui la penalty è scalata di 10
-* Il file **trained_params/logs_32_gen_3** contiene i migliori risultati relativi all'addestramento fatto senza avversari, in cui la penalty è stata scalata di 100 per favorire la velocità.
-* Il file **trained_params/logs_20_gen_7** contiene i risultati relativi all'unico addestramento fatto con gli avversari.
+## Group Members
+* [Giovanni Puzo](https://github.com/giovannipuzo97)
+* [Salvatore Ventre](https://github.com/salventre)
+___
+# Problem Description
+The aim of the project is to learn, or otherwise design, a controller which could be able to race for a certain number of laps on a set of unknown tracks against other controllers. In particular, the primary goal for the project is to design a controller that runs the circuits in the shortest possible time without causing damage and arriving at the first places.</br>
 
-**N.B**: : cercare di rigenerare risultati relativi all'addestramento fatto con check_pos (sensore trackPos) se serve per la relazione
+It is necessary to use the APIs and the [Snakeoil Controller](http://xed.ch/p/snakeoil/) to develop a solution. And also it is necessary to use [TORCS](http://torcs.sourceforge.net/): The Open Racing Car Simulator TORCS has often used as a platform for the development and improvement of intelligent agents for autonomous driving in a competitive environment. Moreover, is important to choose an algorithm from those studied during the course and to define the fitness function taking into account the performance of the controller.</br>
+The constraints are:
+* the number of laps should be at least 2;
+* the number of opponents in a race should be at least 8 and should include: *damned 1*, *damned 3*, *damned 4*, *damned 5*, *damned 6*, *berniw hist 2*, *berniw hist 6*, *berniw hist 7*;
+* the number of circuits where to train your controller should be at least 2 among *Forza*, *CGTrack-2*, *E-Track-3*, *Wheel-1*.
 
-Togliere 20 all'inizio e 7 alla fine di 145_gen_4
+## Documentation
+For more information, read the [report](https://github.com/unisa-PRV-group/NaturalComputation2021-contest/blob/main/doc/Final%20Report%20-%20Group%2017.pdf).
+___
 
-## CLIENT & SNAKEOIL
-In [client.py](client.py) la funzione principale è race a cui va passata la porta su cui deve connettersi il client e il dizionario di parametri che deve usare. Aggiunto controllo per supportare le modifiche fatte in [snakeoil.py](snakeoil.py).
-
-In [snakeoil.py](snakeoil.py) abbiamo modificato la funzione *get_servers_input()* aggiungendo dei return True o False a seconda se l'operazione in questione è andata a buon fine o meno; questo perchè con gli avversari abbiamo avuto dei problemi di connessione col server che o chiudeva (secondo if) o non mandava i dati (primo if); tuttavia per lanciare il test dobbiamo commentare il return false del primo if
-
-## FUNZIONE DI FITNESS
-Partendo dai parametri trovati senza avversari, allenare con una fitness semplice che incentivi a superare per arrivare in prima posizione (racePos e opponents) e poi intodurre damage.
-
-## FITNESS USATE
-* SENZA AVVERSARI
-  * 1e - 40 generazioni (_2) => **f = -(V1\*V2 - (D1-L1)\*(D2-L2)/100)** 
-  * 2e - 150 generazioni (_3+_4) => **f = -(V1\*V2 - (D2-L2)\*(D2-L2)/1000)**
-* CON AVVERSARI
-  * 3e - 67 generazioni (trained_params_67_gen_opponents_1) => **f = -((F1_points(racePos1)+F1_points(racePos1))*10 + (distRaced_1/time_1+distRaced_2/time_2)*10 - (damage1+damage2))** . Nel config partiamo in ultima posizione. Solo due circuiti (Forza e Wheel). Solo 5 avversari. Addestramento partito dal secondo esperimento.
-  * 4e - 60 generazioni (trained_params_60_gen_opponents_2) => **f = stessa fitness dell'esperimento precedente**. Nel config partiamo in 4a posizione.  Solo due circuiti (Forza e Wheel). Addestramento partito dal secondo esperimento.
-  * 4e - 127 generazioni (trained_params_127_gen_opponents_3) da sommare a quello precedente => **f = stessa fitness dell'esperimento precedente**. Nel config partiamo in 4a posizione.  Solo due circuiti (Forza e Wheel). Addestramento continua dall'esperimento precedente.
-  * 5e - 100 generazioni (trained_params_{}_gen_opponents_4) => **f = stessa fitness dell'esperimento precedente**. Nel config partiamo in ultima posizione (9).  Solo due circuiti (Forza e Wheel). Addestramento partito dal secondo esperimento.
-  * 6e - 154 (_gen_exp3_)=> **f=-((F1_points(racePos1)+F1_points(racePos1))*10-(t1+t2)*10 -(damage1+damage2))** . Nel config partiamo in ultima posizione. Addestramento su tutti e quattro i circuiti (vecchia versione), dovremmo rifarlo con solo due circuiti (Forza e Wheel). Addestramento partito dal secondo esperimento. NOTE: Aggiunta di **damage** ma senza migliorie. Prova con **un solo circuito contemporaneamente** ma senza migliorie (_opponentsF1_2).
+##### Puzo & Ventre
